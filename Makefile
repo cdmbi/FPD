@@ -8,7 +8,7 @@ create-virenv:
 
 launch-ipython-notebook:
 
-	ipython notebook --pylab inline
+	ipython notebook
 
 clean:
 
