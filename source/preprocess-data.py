@@ -15,7 +15,7 @@ def main():
 
     datafile = 'FPD-Non-Redundant-20Oct2014.csv' # data file in csv format
     df = pd.read_csv(os.path.join('data', datafile)
-            , delimiter='\t')  # read data into a dataframe
+            , delimiter='\t', index_col='FPID')  # read data into a dataframe
 
     ''' Preprocess excitations and emissions '''
     excitation = df.ix[:, 11].apply(str)
