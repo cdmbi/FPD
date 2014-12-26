@@ -43,11 +43,22 @@ class FPDApp(HBox):
 
     @property
     def df(self):
-        return data.head().ix[:, ['excitation_new',
+        d = data.head().ix[:, ['excitation_new',
                                     'emission_new',
-                                    'excitation_color_new',
-                                    'excitation_color_class',
-                                    ]].dropna()
+                                ]].dropna()
+
+        return data.ix[d.index,['emission_new',
+                                'emission_alt',
+                                'excitation_new',
+                                'excitation_alt',
+                                'excitation_color_new',
+                                'excitation_color_class',
+                                'emission_color_new',
+                                'emission_color_class',
+                                'chromophore_name',
+                                'chromophore_class',
+                                'fpid',
+                                ]].fillna('')
 
     def make_source(self):
         self.source = ColumnDataSource(data=self.df)
@@ -83,14 +94,14 @@ class FPDApp(HBox):
                 )
         hover = p.select(dict(type=HoverTool))
         hover.tooltips = [
-            # ("FPID", "@fpid"),
-            # ("Chromophore", "@chromophore"),
-            ("Excitation Color Class", "@excitation_color_class"),
-            # ("Emission color class", "@emission_color_class"),
-            ("Primary excitation", "@excitation_new"),
-            # ("Secondary excitation", "@excitation_alt"),
-            ("Primary emission", "@emission_new"),
-            # ("Secondary emission", "@emission_alt"),
+            ("FPID ", "@fpid"),
+            ("Chromophore name ", "@chromophore_name"),
+            ("Excitation color class ", "@excitation_color_class"),
+            ("Emission color class ", "@emission_color_class"),
+            ("Primary excitation ", "@excitation_new"),
+            ("Secondary excitation ", "@excitation_alt"),
+            ("Primary emission ", "@emission_new"),
+            ("Secondary emission ", "@emission_alt"),
         ]
         # obj.update_data()
         obj.plot = p
