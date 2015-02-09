@@ -12,87 +12,122 @@ import numpy as np
 from collections import OrderedDict
 from bokeh.plotting import circle, figure
 from bokeh.models import Plot, ColumnDataSource, Range1d, HoverTool
-from bokeh.properties import Instance
+from bokeh.properties import Instance, String
 from bokeh.server.app import bokeh_app
 from bokeh.server.utils.plugins import object_page
 from bokeh.models.widgets import HBox, Slider, TextInput, VBoxForm, Select
+
+def get_data(chrom_class):
+    data = pd.read_csv(os.path.join('data',
+                        'FPD-non-redundant-processed.csv'),
+                        delimiter=',')
+    d = data.head(n=20).ix[:, ['excitation_new', 'emission_new']].dropna()
+    cleaned_data = data.head(n=20).ix[d.index,['emission_new',
+                            'emission_alt',
+                            'excitation_new',
+                            'excitation_alt',
+                            'excitation_color_new',
+                            'excitation_color_class',
+                            'emission_color_new',
+                            'emission_color_class',
+                            'chromophore_name',
+                            'chromophore_class',
+                            'fpid',
+                            ]].fillna('')
+    selected_data = cleaned_data[
+                        cleaned_data['chromophore_class']==chrom_class]
+    return selected_data
 
 data = pd.read_csv(os.path.join('data',
                     'FPD-non-redundant-processed.csv'),
                     delimiter=',')
 
-CHROMOPHORES = sorted(set(data['chromophore_class'].dropna()))
+CHROMOPHORES = sorted(set(data.head(n=20)['chromophore_class'].dropna()))
 
 class FPDApp(HBox):
     extra_generated_classes = [["FPDApp", "FPDApp", "HBox"]]
 
     inputs = Instance(VBoxForm)
+    plots = Instance(HBox)
 
     # text = Instance(TextInput)
 
     excitation = Instance(Slider)
     emission = Instance(Slider)
-    chromophore = Instance(Select)
+    chrom_class_select = Instance(Select)
+    chrom_class = String(default='AYG')
 
     plot = Instance(Plot)
     source = Instance(ColumnDataSource)
 
     def __init__(self, *args, **kwargs):
         super(FPDApp, self).__init__(*args, **kwargs)
-        self._dfs = {}
 
-    @property
-    def df(self):
-        d = data.head().ix[:, ['excitation_new',
-                                    'emission_new',
-                                ]].dropna()
-
-        return data.ix[d.index,['emission_new',
-                                'emission_alt',
-                                'excitation_new',
-                                'excitation_alt',
-                                'excitation_color_new',
-                                'excitation_color_class',
-                                'emission_color_new',
-                                'emission_color_class',
-                                'chromophore_name',
-                                'chromophore_class',
-                                'fpid',
-                                ]].fillna('')
-
-    def make_source(self):
-        self.source = ColumnDataSource(data=self.df)
 
     @classmethod
     def create(cls):
         obj = cls()
 
+        print('---- INSTANTIATE OBJ ----')
+        obj.make_inputs()
         obj.make_source()
+        obj.make_plots()
+        obj.set_children()
 
-        obj.excitation = Slider(
+        print('---- ALL DONE ---- .')
+
+        return obj
+
+
+    @property
+    def df(self):
+        data = get_data(self.chrom_class)
+        return data
+
+
+    def make_inputs(self):
+        print('CALL: make_inputs')
+        print('Current chromophore class: %s', self.chrom_class)
+
+        self.excitation = Slider(
                 title="Excitation", name="excitation",
                 value=1.0, start=-5.0, end=5.0,
                 )
-        obj.emission = Slider(
+        self.emission = Slider(
                 title="Emission", name="emission",
                 value=1.0, start=-5.0, end=5.0,
                 )
-        obj.chromophore = Select(
+        self.chrom_class_select = Select(
                 name="Chromophore",
-                value=CHROMOPHORES[0],
+                value='AYG',
                 options=CHROMOPHORES,
                 )
+
+
+    def make_source(self):
+        print('CALL: make_source')
+        self.source = ColumnDataSource(data=self.df)
+        print('CALL END: make_source')
+
+
+    def make_plots(self):
+        print('CALL: make_plots')
+        self.plot = self.scatter_plot()
+
+
+    def scatter_plot(self):
+        print('CALL: scatter_plot')
         toolset = "pan,reset,resize,save,wheel_zoom,hover"
 
-        p = figure(title="Just a simple plot", tools=toolset)
-        p.circle('excitation_new', 'emission_new',
-                source=obj.source,
+        plot = figure(title="A Scatter Plot", tools=toolset)
+        plot.circle('excitation_new', 'emission_new',
+                source=self.source,
                 plot_width=600, plot_height=600,
                 radius=2, fill_alpha=0.6,
                 fill_color='excitation_color_new',
                 line_color='#000000',
                 )
-        hover = p.select(dict(type=HoverTool))
+        hover = plot.select(dict(type=HoverTool))
         hover.tooltips = [
             ("FPID ", "@fpid"),
             ("Chromophore name ", "@chromophore_name"),
@@ -103,35 +138,41 @@ class FPDApp(HBox):
             ("Primary emission ", "@emission_new"),
             ("Secondary emission ", "@emission_alt"),
         ]
-        # obj.update_data()
-        obj.plot = p
-        obj.inputs = VBoxForm(
-                children=[
-                    obj.excitation,
-                    obj.emission,
-                    obj.chromophore,
-                    ]
-                )
+        return plot
 
-        obj.children.append(obj.inputs)
-        obj.children.append(obj.plot)
-        return obj
+    def set_children(self):
+        print('CALL: set_children')
+        self.inputs = VBoxForm(children=[
+                                self.excitation,
+                                self.emission,
+                                self.chrom_class_select,
+                            ])
 
-    # def setup_events(self):
-    #     super(FPDApp, self).setup_events()
-        # for w in ["offset", "amplitude", "phase", "freq"]:
-        #     getattr(self, w).on_change("value",
-        #                         self, "input_change")
+        print('set_children part II ----')
+        self.plots = HBox(children=[self.plot])
+        self.children = [self.inputs, self.plots]
 
-    # def input_change(self, obj, attrname, old, new):
-    #     self.update_data()
-        # self.plot.title = self.text.value
+    def setup_events(self):
+        print('CALL: setup_events')
+        super(FPDApp, self).setup_events()
 
-    # def update_data(self):
-    #     pass
+        if self.chrom_class_select:
+            self.chrom_class_select.on_change(
+                    'value', self, 'input_change')
+
+    def input_change(self, obj, attrname, old, new):
+        print('CALL: input_change')
+        if obj == self.chrom_class_select:
+            self.chrom_class = new
+            print '\n\nChromophore class: %s\n' % \
+                    self.chrom_class
+
+        self.make_source()
+        # self.make_plots()
+        # self.set_children()
 
 @bokeh_app.route("/bokeh/fpd/")
-@object_page("sin")
+@object_page("fpd")
 def make_object():
     app = FPDApp.create()
     return app
