@@ -176,15 +176,15 @@ class FPDApp(HBox):
     def get_data(self):
         df = data
 
-        if self.chrom_class == 'All':  # all chromophore classes
-            return df
-        else:
-            df = df[df['chromophore_class']==self.chrom_class]
-
         df = df[df['excitation_new']>=self.min_excitation.value]
         df = df[df['excitation_new']<=self.max_excitation.value]
         df = df[df['emission_new']>=self.min_emission.value]
         df = df[df['emission_new']<=self.max_emission.value]
+
+        if self.chrom_class == 'All':  # all chromophore classes
+            return df
+        else:
+            df = df[df['chromophore_class']==self.chrom_class]
 
         return df
 
@@ -304,6 +304,7 @@ class FPDApp(HBox):
         # self.pretext.text = str(self.selected_df['doi'])
         self.data_table.source = self.source
         self.reset_sliders()
+        self.make_plots()
         self.set_children()
         curdoc().add(self)
 
