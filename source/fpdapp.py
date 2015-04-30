@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 
 from collections import OrderedDict
-from bokeh.plotting import circle, figure, curdoc
+from bokeh.plotting import figure, curdoc
 from bokeh.models import Plot, ColumnDataSource, Range1d, HoverTool
 from bokeh.properties import Instance, String
 from bokeh.server.app import bokeh_app
@@ -207,7 +207,7 @@ class FPDApp(HBox):
 
 
     def scatter_plot(self):
-        toolset = "pan,reset,resize,save,wheel_zoom,hover,select"
+        toolset = "pan,reset,resize,save,wheel_zoom,hover,box_select"
 
         plot = figure(tools=toolset)
         plot.scatter('excitation_new', 'emission_new',
