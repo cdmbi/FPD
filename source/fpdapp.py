@@ -56,19 +56,19 @@ max_excitation = max(data['excitation_new']) + xy_margin
 min_excitation = min(data['excitation_new']) - xy_margin
 
 columns = [
-        TableColumn(field='fpid', title='FPID'),
-        TableColumn(field='chromophore_name', title='chromophore_name'),
-        TableColumn(field='chromophore_class', title='chromophore_class'),
-        TableColumn(field='protein_name', title='Protein name'),
-        TableColumn(field='excitation_new', title='Excitation'),
-        TableColumn(field='emission_new', title='Emission'),
-        TableColumn(field='pdb_id', title='PDB ID'),
-        TableColumn(field='genbank', title='Genbank ID'),
-        TableColumn(field='mutation', title='Mutation'),
-        TableColumn(field='quantum_yield', title='Quantum Yield'),
-        TableColumn(field='pka', title='pka'),
-        TableColumn(field='amino_acid_sequence', title='Sequence'),
-        ]
+    TableColumn(field='fpid', title='FPID'),
+    TableColumn(field='chromophore_name', title='chromophore_name'),
+    TableColumn(field='chromophore_class', title='chromophore_class'),
+    TableColumn(field='protein_name', title='Protein name'),
+    TableColumn(field='excitation_new', title='Excitation'),
+    TableColumn(field='emission_new', title='Emission'),
+    TableColumn(field='pdb_id', title='PDB ID'),
+    TableColumn(field='genbank', title='Genbank ID'),
+    TableColumn(field='mutation', title='Mutation'),
+    TableColumn(field='quantum_yield', title='Quantum Yield'),
+    TableColumn(field='pka', title='pka'),
+    TableColumn(field='amino_acid_sequence', title='Sequence'),
+]
 
 class FPDApp(HBox):
     extra_generated_classes = [["FPDApp", "FPDApp", "HBox"]]
@@ -135,14 +135,25 @@ class FPDApp(HBox):
                 )
 
         obj.source = ColumnDataSource(data=data)
-        obj.data_table = DataTable(source=obj.source, columns=columns)
+        obj.data_table = DataTable(source=obj.source, columns=[
+            TableColumn(field='fpid', title='FPID'),
+            TableColumn(field='chromophore_name', title='chromophore_name'),
+            TableColumn(field='chromophore_class', title='chromophore_class'),
+            TableColumn(field='protein_name', title='Protein name'),
+            TableColumn(field='excitation_new', title='Excitation'),
+            TableColumn(field='emission_new', title='Emission'),
+            TableColumn(field='pdb_id', title='PDB ID'),
+            TableColumn(field='genbank', title='Genbank ID'),
+            TableColumn(field='mutation', title='Mutation'),
+            TableColumn(field='quantum_yield', title='Quantum Yield'),
+            TableColumn(field='pka', title='pka'),
+            TableColumn(field='amino_acid_sequence', title='Sequence'),
+        ])
         obj.data_table.width = 1200
-        obj.data_table.source = obj.source
         # obj.pretext = PreText(text='No selected items', width=400)
 
         obj.make_plots()
         obj.set_children()
-
 
         return obj
 
@@ -302,7 +313,7 @@ class FPDApp(HBox):
 
         self.make_source()
         # self.pretext.text = str(self.selected_df['doi'])
-        self.data_table.source = self.source
+        # self.data_table.source = self.source
         self.reset_sliders()
         self.make_plots()
         self.set_children()
