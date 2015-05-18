@@ -17,7 +17,7 @@ from bokeh.server.app import bokeh_app
 from bokeh.server.utils.plugins import object_page
 from bokeh.models.widgets import (HBox, Slider, TextInput,
                                     VBox, VBoxForm, Select,
-                                    PreText, DataTable,
+                                    PreText, DataTable, Button,
                                 )
 from bokeh.models.widgets.tables import TableColumn
 
@@ -78,7 +78,6 @@ class FPDApp(HBox):
     table_frame = Instance(HBox)
     input_frame = Instance(VBoxForm)
     plot_frame = Instance(HBox)
-    data_table = Instance(DataTable)
 
     # widget instances
     # TODO:: add a reset button
@@ -88,6 +87,8 @@ class FPDApp(HBox):
     max_emission = Instance(Slider)
     chrom_class_select = Instance(Select)
     chrom_class = String(default='All')
+    data_table = Instance(DataTable)
+    button = Instance(Button)
 
     plot = Instance(Plot)
     source = Instance(ColumnDataSource)
@@ -133,6 +134,9 @@ class FPDApp(HBox):
                 value='All',
                 options=CHROMOPHORES,
                 )
+
+        obj.button = Button(label="reset", type="primary")
+        obj.button.on_click(obj.reset_sliders)
 
         obj.source = ColumnDataSource(data=data)
         obj.data_table = DataTable(source=obj.source, columns=[
@@ -254,6 +258,7 @@ class FPDApp(HBox):
                                 self.max_excitation,
                                 self.min_emission,
                                 self.max_emission,
+                                self.button,
                                 self.chrom_class_select,
                             ])
 
