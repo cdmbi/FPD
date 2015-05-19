@@ -11,7 +11,6 @@ dependencies:
 - decorator=3.4.0=py27_0
 - enum34=1.0.4=py27_0
 - flask=0.10.1=py27_1
-- freetype=2.4.10=1
 - funcsigs=0.4=py27_0
 - gevent=1.0.1=py27_0
 - gevent-websocket=0.9.3=py27_0
