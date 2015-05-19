@@ -48,27 +48,11 @@ data = _data.ix[d.index,['emission_new',
                         ]].fillna('')
 
 CHROMOPHORES = sorted(set(data['chromophore_class']))
-CHROMOPHORES.insert(0, 'All')
 xy_margin = 80
 max_emission = max(data['emission_new']) + xy_margin
 min_emission = min(data['emission_new']) - xy_margin
 max_excitation = max(data['excitation_new']) + xy_margin
 min_excitation = min(data['excitation_new']) - xy_margin
-
-columns = [
-    TableColumn(field='fpid', title='FPID'),
-    TableColumn(field='chromophore_name', title='chromophore_name'),
-    TableColumn(field='chromophore_class', title='chromophore_class'),
-    TableColumn(field='protein_name', title='Protein name'),
-    TableColumn(field='excitation_new', title='Excitation'),
-    TableColumn(field='emission_new', title='Emission'),
-    TableColumn(field='pdb_id', title='PDB ID'),
-    TableColumn(field='genbank', title='Genbank ID'),
-    TableColumn(field='mutation', title='Mutation'),
-    TableColumn(field='quantum_yield', title='Quantum Yield'),
-    TableColumn(field='pka', title='pka'),
-    TableColumn(field='amino_acid_sequence', title='Sequence'),
-]
 
 class FPDApp(HBox):
     extra_generated_classes = [["FPDApp", "FPDApp", "HBox"]]
@@ -78,64 +62,36 @@ class FPDApp(HBox):
     table_frame = Instance(HBox)
     input_frame = Instance(VBoxForm)
     plot_frame = Instance(HBox)
-    data_table = Instance(DataTable)
 
     # widget instances
-    # TODO:: add a reset button
     min_excitation = Instance(Slider)
     max_excitation = Instance(Slider)
     min_emission = Instance(Slider)
     max_emission = Instance(Slider)
     chrom_class_select = Instance(Select)
-    chrom_class = String(default='All')
+    # chrom_class = String(default='All')
+    data_table = Instance(DataTable)
 
     plot = Instance(Plot)
     source = Instance(ColumnDataSource)
     # pretext = Instance(PreText)
 
 
-    def __init__(self, *args, **kwargs):
-        super(FPDApp, self).__init__(*args, **kwargs)
-
-
     @classmethod
     def create(cls):
         obj = cls()
+        obj.init_input()
+        obj.init_source()
+        obj.init_plot()
+        obj.set_children()
+        return obj
 
-        # create input widgets only once
-        obj.min_excitation = Slider(
-                title="Min Excitation", name="min_excitation",
-                value=min_excitation,
-                start=min_excitation,
-                end=max_excitation,
-                )
-        obj.max_excitation = Slider(
-                title="Max Excitation", name="max_excitation",
-                value=max_excitation,
-                start=min_excitation,
-                end=max_excitation,
-                )
-        obj.min_emission = Slider(
-                title="Min Emission", name="min_emission",
-                value=min_emission,
-                start=min_emission,
-                end=max_emission,
-                )
-        obj.max_emission = Slider(
-                title="Max Emission", name="max_emission",
-                value=max_emission,
-                start=min_emission,
-                end=max_emission,
-                )
+    def __init__(self, *args, **kwargs):
+        super(FPDApp, self).__init__(*args, **kwargs)
 
-        obj.chrom_class_select = Select(
-                name="Chromophore",
-                value='All',
-                options=CHROMOPHORES,
-                )
-
-        obj.source = ColumnDataSource(data=data)
-        obj.data_table = DataTable(source=obj.source, columns=[
+    def init_source(self):
+        self.source = ColumnDataSource(data=data)
+        self.data_table = DataTable(source=self.source, columns=[
             TableColumn(field='fpid', title='FPID'),
             TableColumn(field='chromophore_name', title='chromophore_name'),
             TableColumn(field='chromophore_class', title='chromophore_class'),
@@ -149,15 +105,47 @@ class FPDApp(HBox):
             TableColumn(field='pka', title='pka'),
             TableColumn(field='amino_acid_sequence', title='Sequence'),
         ])
-        obj.data_table.width = 1200
+        self.data_table.width = 1200
         # obj.pretext = PreText(text='No selected items', width=400)
 
-        obj.make_plots()
-        obj.set_children()
+    def init_plot(self):
+        self.plot = self.scatter_plot()
 
-        return obj
+    def init_input(self):
+        # create input widgets only once
+        self.min_excitation = Slider(
+                title="Min Excitation", name="min_excitation",
+                value=min_excitation,
+                start=min_excitation,
+                end=max_excitation,
+                )
+        self.max_excitation = Slider(
+                title="Max Excitation", name="max_excitation",
+                value=max_excitation,
+                start=min_excitation,
+                end=max_excitation,
+                )
+        self.min_emission = Slider(
+                title="Min Emission", name="min_emission",
+                value=min_emission,
+                start=min_emission,
+                end=max_emission,
+                )
+        self.max_emission = Slider(
+                title="Max Emission", name="max_emission",
+                value=max_emission,
+                start=min_emission,
+                end=max_emission,
+                )
 
-    def reset_sliders(self):
+        self.chrom_class_select = Select(
+                title="Chromophore",
+                value='All',
+                options=['All'] + CHROMOPHORES,
+                )
+
+
+    def set_sliders(self):
         self.min_excitation = Slider(
                 title="Min Excitation", name="min_excitation",
                 value=self.min_excitation.value,
@@ -192,10 +180,10 @@ class FPDApp(HBox):
         df = df[df['emission_new']>=self.min_emission.value]
         df = df[df['emission_new']<=self.max_emission.value]
 
-        if self.chrom_class == 'All':  # all chromophore classes
+        if self.chrom_class_select.value == 'All':  # all chromophore classes
             return df
         else:
-            df = df[df['chromophore_class']==self.chrom_class]
+            df = df[df['chromophore_class']==self.chrom_class_select.value]
 
         return df
 
@@ -203,9 +191,8 @@ class FPDApp(HBox):
     def make_source(self):
         self.source.data = self.get_data().to_dict('list')
 
-
     def make_plots(self):
-        # print('CALL: make_plots')
+    #     # print('CALL: make_plots')
         self.plot = self.scatter_plot()
 
     @property
@@ -223,13 +210,13 @@ class FPDApp(HBox):
         plot = figure(tools=toolset)
         plot.scatter('excitation_new', 'emission_new',
                 source=self.source,
-                plot_width=500, plot_height=600,
+                plot_width=100, plot_height=200,
                 radius=4, fill_alpha=0.4,
                 fill_color='excitation_color_new',
                 line_color='#000000',
-                ylabel='Emission',
-                xlabel='Excitation',
                 )
+        plot.xaxis.axis_label = 'Emission'
+        plot.yaxis.axis_label = 'Excitation'
 
         plot.x_range = Range1d(start=min_excitation, end=max_excitation)
         plot.y_range = Range1d(start=min_emission, end=max_excitation)
@@ -268,56 +255,60 @@ class FPDApp(HBox):
         super(FPDApp, self).setup_events()
 
         if self.source:
-            self.source.on_change('selected', self, 'input_change')
+            self.source.on_change('selected', self, 'on_slider_change')
 
         if self.min_excitation:
-            self.min_excitation.on_change('value', self, 'input_change')
+            self.min_excitation.on_change('value', self, 'on_slider_change')
 
         if self.max_excitation:
-            self.max_excitation.on_change('value', self, 'input_change')
+            self.max_excitation.on_change('value', self, 'on_slider_change')
 
         if self.min_emission:
-            self.min_emission.on_change('value', self, 'input_change')
+            self.min_emission.on_change('value', self, 'on_slider_change')
 
         if self.max_emission:
-            self.max_emission.on_change('value', self, 'input_change')
+            self.max_emission.on_change('value', self, 'on_slider_change')
 
         if self.chrom_class_select:
             self.chrom_class_select.on_change(
-                                'value', self, 'input_change')
+                                'value', self, 'on_class_change')
 
 
-    def input_change(self, obj, attrname, old, new):
-        if obj == self.chrom_class_select:
-            self.chrom_class = new
+    def on_class_change(self, obj, attrname, old, new):
+        self.chrom_class_select.value = new
+        self.make_source()
+        curdoc().add(self)
 
+    def on_slider_change(self, obj, attrname, old, new):
         if obj == self.min_excitation:
             self.min_excitation.value = new
             if self.min_excitation.value > self.max_excitation.value:
-                self.min_excitation.value = self.max_excitation.value
+                self.min_excitation.value = old
 
         if obj == self.max_excitation:
             self.max_excitation.value = new
             if self.max_excitation.value < self.min_excitation.value:
-                self.max_excitation.value = self.min_excitation.value
+                self.max_excitation.value = old
 
         if obj == self.min_emission:
             self.min_emission.value = new
             if self.min_emission.value > self.max_emission.value:
-                self.min_emission.value = self.max_emission.value
+                self.min_emission.value = old
 
         if obj == self.max_emission:
             self.max_emission.value = new
             if self.max_emission.value < self.min_emission.value:
-                self.max_emission.value = self.min_emission.value
+                self.max_emission.value = old
 
+        self.set_sliders()
+        self.set_children()
         self.make_source()
+        curdoc().add(self)
+
         # self.pretext.text = str(self.selected_df['doi'])
         # self.data_table.source = self.source
-        self.reset_sliders()
-        self.make_plots()
-        self.set_children()
-        curdoc().add(self)
+        # self.reset_sliders()
+        # self.make_plots()
 
 @bokeh_app.route("/bokeh/fpd/")
 @object_page("fpd")
