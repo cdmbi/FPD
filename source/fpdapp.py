@@ -277,6 +277,7 @@ class FPDApp(HBox):
     def on_class_change(self, obj, attrname, old, new):
         self.chrom_class_select.value = new
         self.make_source()
+        self.make_plots()
         curdoc().add(self)
 
     def on_slider_change(self, obj, attrname, old, new):
@@ -301,8 +302,8 @@ class FPDApp(HBox):
                 self.max_emission.value = old
 
         self.set_sliders()
-        self.set_children()
         self.make_source()
+        self.set_children()
         curdoc().add(self)
 
         # self.pretext.text = str(self.selected_df['doi'])
