@@ -1,0 +1,193 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf8">
+        <script src="js/d3/d3.js"></script>
+        <script>
+            function draw(data) {
+                "use strict";
+                // badass visualization goes here
+                var margin = 50, width = 800, height = 600;
+
+                d3.select('#mainplot')
+                    .append('svg')
+                        .attr('width', width)
+                        .attr('height', height)
+                    .selectAll('circle')
+                    .data(data)
+                    .enter()
+                    .append('circle')
+
+                var x_extent = d3.extent(data, function(d) { return parseFloat(d.emission_new) });
+                var x_scale = d3.scale.linear()
+                    .range([margin, width-margin])
+                    .domain(x_extent);
+
+                var y_extent = d3.extent(data, function(d) { return parseFloat(d.excitation_new) });
+                var y_scale = d3.scale.linear()
+                    .range([height-margin, margin])
+                    .domain(y_extent);
+
+                d3.selectAll('circle')
+                    .attr('cx', function(d){return x_scale(parseFloat(d.emission_new))})
+                    .attr('cy', function(d){return y_scale(parseFloat(d.excitation_new))})
+                    .style('fill', function(d){return d.excitation_color_new})
+                    .style('opacity', 0.5)
+                    .style('stroke', 'black')
+                    .style('stroke-width', 1)
+
+                d3.selectAll('circle')
+                    .attr('r', 8);
+
+                d3.selectAll('circle')
+                    .on('mouseover', function(d) {
+                            d3.select(this)
+                                .transition()
+                                .attr('r', 12)
+                                .style('opacity', 1)
+                                .style('stroke-width', 2)
+
+                            var x_position = parseFloat(d3.select(this).attr('cx')) + 30;
+                            var y_position = parseFloat(d3.select(this).attr('cy')) - 30;
+
+                            d3.select('#tooltip')
+                                .style('left', x_position + 'px')
+                                .style('top', y_position + 'px')
+                                .select('#excitation')
+                                .text(d.excitation_new)
+
+                            d3.select('#tooltip')
+                                .select('#emission')
+                                .text(d.emission_new)
+
+                            d3.select('#tooltip')
+                                .select('#chromclass')
+                                .text(d.chromophore_class);
+
+                            d3.select('#tooltip').classed('hidden', false);
+                            });
+
+                d3.selectAll('circle')
+                    .on('mouseout', function(d) {
+                            d3.select(this)
+                                .transition()
+                                .attr('r', 8)
+                                .style('opacity', 0.5)
+                                .style('stroke-width', 1)
+
+                            d3.select('#tooltip').classed('hidden', true);
+                            });
+
+                //
+
+                var emission_extent = d3.extent(
+                        data, function(d) { return parseFloat(d.emission_new) }
+                        );
+
+                var emission_scale = d3.scale.linear()
+                    .domain(emission_extent)
+                    .range([margin, width-margin]);
+
+                var emission_axis = d3.svg.axis()
+                    .scale(emission_scale)
+
+                var excitation_extent = d3.extent(
+                        data, function(d) { return parseFloat(d.excitation_new) }
+                        );
+
+                var excitation_scale = d3.scale.linear()
+                    .domain(excitation_extent)
+                    .range([height-margin, margin]);
+
+                var excitation_axis = d3.svg.axis()
+                    .scale(excitation_scale)
+                    .orient('left');
+
+                d3.select('svg')
+                    .append('g')
+                        .attr('class', 'x axis')
+                        .attr('transform', 'translate(0,' + (height-margin) + ')')
+                    .call(emission_axis);
+
+                d3.select('svg')
+                    .append('g')
+                        .attr('class', 'y axis')
+                        .attr('transform', 'translate(' + margin + ',0)')
+                    .call(excitation_axis);
+
+                // add axis title
+                d3.select('.x.axis')
+                    .append('text')
+                        .text('Excitation')
+                        .attr('x', (width/2)-margin)
+                        .attr('y', margin / 1.5);
+
+            }
+
+        </script>
+        <style>
+            .axis path {
+                fill:none;
+                stroke:black;
+            }
+
+            .axis {
+                font-size:8pt;
+                font-family:sans-serif;
+            }
+
+            .tick {
+                fill:none;
+                stroke:black;
+            }
+
+            #tooltip {
+                position: absolute;
+                width: 200px;
+                height: auto;
+                padding: 10px;
+                background-color: white;
+                -webkit-border-radius: 10px;
+                -moz-border-radius: 10px;
+                border-radius: 10px;
+                -webkit-box-shadow: 4px 4px 10px rgba(0,0,0,0.4);
+                -moz-box-shadow: 4px 4px 10px rgba(0,0,0,0.4);
+                box-shadow: 4px 4px 10px rgba(0,0,0,0.4);
+                pointer-events: none;
+            }
+
+            #tooltip.hidden {
+                display: none;
+            }
+
+            #tooltip p {
+                margin: 0;
+                font-family: sans-serif;
+                font-size: 16px;
+                line-height: 20px;
+            }
+
+            #selector {
+                float: right;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="tooltip" class="hidden">
+            <p><strong>Chromophore class: </strong><span id="chromclass"></span></p>
+            <p><strong>Excitation: </strong><span id="excitation"></span> nm</p>
+            <p><strong>Emission: </strong><span id="emission"></span> nm</p>
+        </div>
+        <div id="mainplot"></div>
+        <div id="selector">
+            <select id="chromclass">
+                <option value="All">All</option>
+                <option value="AYG">AYG</option>
+            </select>
+        </div>
+        <script>
+            d3.json("data/FPD-non-redundant-processed.json", draw);
+            add_selectors();
+        </script>
+    </body>
+</html>
