@@ -249,24 +249,49 @@
             <div id="selector">
                 Chromophore Class  <select id="chromclass_sel">
                         <option value="All">All</option>
-                        <option value="AYG">AYG</option>
-                        <option value="CYG">CYG</option>
                 </select>
             </div>
             <span id="excitation-range"></span>
             <div id="excite-slider"></div>
             <span id="emission-range"></span>
             <div id="emiss-slider"></div>
+            <button type="button" id="reset-btn">Reset</button>
         </div>
         <script>
-            d3.json("data/FPD-non-redundant-processed.json", draw);
-
-            $('#excitation-range')
-                .text('Excitation: ' + 300 + '-' + 700);
-            $('#emission-range')
-                .text('Emission: ' + 300 + '-' + 700);
-
             $(document).ready(function() {
+                    d3.json("data/FPD-non-redundant-processed.json", function(error, data) {
+                            var chromophores = [];
+                            var excitation_value = [];
+                            var emission_value = [];
+
+                            for (var i = 0; i < data.length; i++) {
+                                var obj = data[i];
+                                chromophores.push(obj['chromophore_class']);
+                                excitation_value.push(parseFloat(obj['excitation_new']));
+                                emission_value.push(parseFloat(obj['emission_new']));
+                            }
+                            chromophores = $.unique(chromophores);
+                            chromophores.sort();
+
+                            console.log(excitation_value, emission_value);
+
+                            d3.select('#chromclass_sel')
+                            .selectAll('option')
+                            .data(chromophores)
+                            .enter()
+                            .append('option')
+                            .text(function(d) { return d})
+                        });
+
+                    $('#excitation-range')
+                        .text('Excitation: ' + 300 + '-' + 700);
+                    $('#emission-range')
+                        .text('Emission: ' + 300 + '-' + 700);
+
+                    $('#reset-btn').on('click', function() {
+                            window.location.reload(true);
+                            });
+
                     $('#excite-slider').slider({
                         range: true,
                         min: 340,
@@ -302,6 +327,8 @@
                         d3.select('#tooltip').classed('hidden', true);
                         d3.json("data/FPD-non-redundant-processed.json", draw_circles);
                     });
+
+            d3.json("data/FPD-non-redundant-processed.json", draw);
             })
         </script>
     </body>
