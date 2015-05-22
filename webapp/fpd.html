@@ -3,20 +3,42 @@
     <head>
         <meta charset="utf8">
         <script src="js/d3/d3.js"></script>
+        <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+        <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
         <script>
-            function draw(data) {
-                "use strict";
-                // badass visualization goes here
-                var margin = 50, width = 800, height = 600;
+            var margin = 50, width = 800, height = 600;
 
-                d3.select('#mainplot')
-                    .append('svg')
-                        .attr('width', width)
-                        .attr('height', height)
+            function draw_circles(data) {
+
+                var excitation_min = $('#excite-slider').slider("option", "values")[0];
+                var excitation_max = $('#excite-slider').slider("option", "values")[1];
+                var emission_min = $('#emiss-slider').slider("option", "values")[0];
+                var emission_max = $('#emiss-slider').slider("option", "values")[1];
+
+                function filter_excitation(d) {
+                    return (d.excitation_new >= excitation_min) && (d.excitation_new <= excitation_max);
+                }
+
+                function filter_emission(d) {
+                    return (d.emission_new >= emission_min) && (d.emission_new <= emission_max);
+                }
+                d3.select('svg')
                     .selectAll('circle')
-                    .data(data)
-                    .enter()
-                    .append('circle')
+                    .remove();
+
+                d3.select('svg')
+                    .selectAll('circle')
+                        .data(data.filter(function(d) {
+                                if ($('#chromclass_sel').val() === 'All') {
+                                    return filter_excitation(d) && filter_emission(d);
+                                } else {
+                                    return (d.chromophore_class === $('#chromclass_sel').val())
+                                                && filter_excitation(d) && filter_emission(d);
+                                }}))
+                        .enter()
+                        .append('circle')
+                        .attr('r', 8)
 
                 var x_extent = d3.extent(data, function(d) { return parseFloat(d.emission_new) });
                 var x_scale = d3.scale.linear()
@@ -35,14 +57,6 @@
                     .style('opacity', 0.5)
                     .style('stroke', 'black')
                     .style('stroke-width', 1)
-
-                d3.selectAll('circle')
-                    .attr('r', 8);
-
-                d3.select('svg')
-                    .on('click', function(d) {
-                            d3.select('#tooltip').classed('hidden', true);
-                            })
 
                 d3.selectAll('circle')
                     .on('mouseover', function(d) {
@@ -102,8 +116,24 @@
 
                             // d3.select('#tooltip').classed('hidden', true);
                             });
+            }
 
-                //
+            function draw(data) {
+                "use strict";
+
+                d3.select('#mainplot')
+                    .append('svg')
+                        .attr('width', width)
+                        .attr('height', height);
+
+                draw_circles(data);
+
+                d3.select('svg')
+                    .on('click', function(d) {
+                            d3.select('#tooltip').classed('hidden', true);
+                            })
+
+                // add axes
 
                 var emission_extent = d3.extent(
                         data, function(d) { return parseFloat(d.emission_new) }
@@ -143,7 +173,7 @@
                 // add axis title
                 d3.select('.x.axis')
                     .append('text')
-                        .text('Excitation')
+                        .text('Emission')
                         .attr('x', (width/2)-margin)
                         .attr('y', margin / 1.5);
 
@@ -151,9 +181,11 @@
 
         </script>
         <style>
-            .axis path {
+            .axis path, .axis line {
                 fill:none;
                 stroke:black;
+                stroke-width: 1;
+                shape-rendering: crispEdges;
             }
 
             .axis {
@@ -192,8 +224,13 @@
                 line-height: 20px;
             }
 
-            #selector {
+            #input-panel {
                 float: right;
+                width: 400px;
+                height: 500px;
+            }
+            #slider {
+                width: 100%;
             }
 
         </style>
@@ -208,15 +245,64 @@
             <p><strong>Species: </strong><small><i><span id="species"></span></i></small></p>
         </div>
         <div id="mainplot"></div>
-        <div id="selector">
-            <select id="chromclass">
-                <option value="All">All</option>
-                <option value="AYG">AYG</option>
-            </select>
+        <div id="input-panel">
+            <div id="selector">
+                Chromophore Class  <select id="chromclass_sel">
+                        <option value="All">All</option>
+                        <option value="AYG">AYG</option>
+                        <option value="CYG">CYG</option>
+                </select>
+            </div>
+            <span id="excitation-range"></span>
+            <div id="excite-slider"></div>
+            <span id="emission-range"></span>
+            <div id="emiss-slider"></div>
         </div>
         <script>
             d3.json("data/FPD-non-redundant-processed.json", draw);
-            add_selectors();
+
+            $('#excitation-range')
+                .text('Excitation: ' + 300 + '-' + 700);
+            $('#emission-range')
+                .text('Emission: ' + 300 + '-' + 700);
+
+            $(document).ready(function() {
+                    $('#excite-slider').slider({
+                        range: true,
+                        min: 340,
+                        max: 700,
+                        values: [340, 700],
+                        slide: function(event, ui) {
+                            $('#excitation-range')
+                                .text('Excitation: ' + ui.values[0] + '-' + ui.values[1]);
+
+                            d3.select('#tooltip').classed('hidden', true);
+                            d3.json("data/FPD-non-redundant-processed.json", draw_circles);
+                            }
+                        });
+
+                    $('#emiss-slider').slider({
+                        range: true,
+                        min: 400,
+                        max: 720,
+                        values: [400, 720],
+                        slide: function(event, ui) {
+                            $('#emission-range')
+                                .text('Emission: ' + ui.values[0] + '-' + ui.values[1]);
+
+                            d3.select('#tooltip').classed('hidden', true);
+                            d3.json("data/FPD-non-redundant-processed.json", draw_circles);
+                            }
+                        });
+
+                $('#chromclass_sel').change(function() {
+                        var chromclass = $('#chromclass_sel option:selected').text();
+                        console.log(chromclass)
+
+                        d3.select('#tooltip').classed('hidden', true);
+                        d3.json("data/FPD-non-redundant-processed.json", draw_circles);
+                    });
+            })
         </script>
     </body>
 </html>
