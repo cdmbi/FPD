@@ -39,6 +39,11 @@
                 d3.selectAll('circle')
                     .attr('r', 8);
 
+                d3.select('svg')
+                    .on('click', function(d) {
+                            d3.select('#tooltip').classed('hidden', true);
+                            })
+
                 d3.selectAll('circle')
                     .on('mouseover', function(d) {
                             d3.select(this)
@@ -49,6 +54,8 @@
 
                             var x_position = parseFloat(d3.select(this).attr('cx')) + 30;
                             var y_position = parseFloat(d3.select(this).attr('cy')) - 30;
+
+                            d3.select('#tooltip').classed('hidden', true);
 
                             d3.select('#tooltip')
                                 .style('left', x_position + 'px')
@@ -64,6 +71,24 @@
                                 .select('#chromclass')
                                 .text(d.chromophore_class);
 
+                            d3.select('#tooltip')
+                                .select('#genbank')
+                                    .attr('href', 'http://www.ncbi.nlm.nih.gov/nuccore/' + d.genbank)
+                                    .attr('target', '_blank')
+                                .select('#genbank_link')
+                                    .text(d.genbank)
+
+                            d3.select('#tooltip')
+                                .select('#uniprot')
+                                    .attr('href', 'http://www.uniprot.org/uniprot/' + d.uniprot_id)
+                                    .attr('target', '_blank')
+                                .select('#uniprot_link')
+                                    .text(d.uniprot_id)
+
+                            d3.select('#tooltip')
+                                .select('#species')
+                                .text(d.species);
+
                             d3.select('#tooltip').classed('hidden', false);
                             });
 
@@ -75,7 +100,7 @@
                                 .style('opacity', 0.5)
                                 .style('stroke-width', 1)
 
-                            d3.select('#tooltip').classed('hidden', true);
+                            // d3.select('#tooltip').classed('hidden', true);
                             });
 
                 //
@@ -153,7 +178,7 @@
                 -webkit-box-shadow: 4px 4px 10px rgba(0,0,0,0.4);
                 -moz-box-shadow: 4px 4px 10px rgba(0,0,0,0.4);
                 box-shadow: 4px 4px 10px rgba(0,0,0,0.4);
-                pointer-events: none;
+                /* pointer-events: none; */
             }
 
             #tooltip.hidden {
@@ -170,6 +195,7 @@
             #selector {
                 float: right;
             }
+
         </style>
     </head>
     <body>
@@ -177,6 +203,9 @@
             <p><strong>Chromophore class: </strong><span id="chromclass"></span></p>
             <p><strong>Excitation: </strong><span id="excitation"></span> nm</p>
             <p><strong>Emission: </strong><span id="emission"></span> nm</p>
+            <p><strong>Uniprot ID: </strong><a id="uniprot"><span id="uniprot_link"></span></a></p>
+            <p><strong>Genbank: </strong><a id="genbank"><span id="genbank_link"></span</a></p>
+            <p><strong>Species: </strong><small><i><span id="species"></span></i></small></p>
         </div>
         <div id="mainplot"></div>
         <div id="selector">
