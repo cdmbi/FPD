@@ -232,6 +232,12 @@
             #slider {
                 width: 100%;
             }
+            .overflow {
+                height: 300px;
+            }
+            .ui-widget {
+                font-size: 12px;
+            }
 
         </style>
     </head>
@@ -247,7 +253,8 @@
         <div id="mainplot"></div>
         <div id="input-panel">
             <div id="selector">
-                Chromophore Class  <select id="chromclass_sel">
+                <label for="chromclass_sel">Chromophore Class</label>
+                <select id="chromclass_sel">
                         <option value="All">All</option>
                 </select>
             </div>
@@ -280,6 +287,7 @@
                             .data(chromophores)
                             .enter()
                             .append('option')
+                            .attr('value', function(d) { return d })
                             .text(function(d) { return d})
                         });
 
@@ -288,7 +296,7 @@
                     $('#emission-range')
                         .text('Emission: ' + 300 + '-' + 700);
 
-                    $('#reset-btn').on('click', function() {
+                    $('#reset-btn').button().click(function(event) {
                             window.location.reload(true);
                             });
 
@@ -320,13 +328,16 @@
                             }
                         });
 
-                $('#chromclass_sel').change(function() {
-                        var chromclass = $('#chromclass_sel option:selected').text();
-                        console.log(chromclass)
+                    $('#chromclass_sel').selectmenu().selectmenu("menuWidget").addClass('overflow');
+                    $('#chromclass_sel').selectmenu("option", "width", 200);
+                    $('#chromclass_sel').on("selectmenuchange",
+                            function(event, ui) {
+                                var chromclass = ui.item.value;
+                                console.log(chromclass)
 
-                        d3.select('#tooltip').classed('hidden', true);
-                        d3.json("data/FPD-non-redundant-processed.json", draw_circles);
-                    });
+                                d3.select('#tooltip').classed('hidden', true);
+                                d3.json("data/FPD-non-redundant-processed.json", draw_circles);
+                            });
 
             d3.json("data/FPD-non-redundant-processed.json", draw);
             })
