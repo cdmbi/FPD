@@ -1,11 +1,14 @@
 <!doctype html>
 <html>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta charset="utf8">
-        <script src="js/d3/d3.js"></script>
         <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
         <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
         <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+        <script src="js/d3/d3.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
         <script>
             var margin = 50, width = 800, height = 600;
 
@@ -62,14 +65,14 @@
                     .on('mouseover', function(d) {
                             d3.select(this)
                                 .transition()
-                                .attr('r', 12)
+                                .attr('r', 16)
                                 .style('opacity', 1)
                                 .style('stroke-width', 2)
 
                             var x_position = parseFloat(d3.select(this).attr('cx')) + 30;
                             var y_position = parseFloat(d3.select(this).attr('cy')) - 30;
 
-                            d3.select('#tooltip').classed('hidden', true);
+                            d3.select('#tooltip').style('display', 'none');
 
                             d3.select('#tooltip')
                                 .style('left', x_position + 'px')
@@ -103,7 +106,7 @@
                                 .select('#species')
                                 .text(d.species);
 
-                            d3.select('#tooltip').classed('hidden', false);
+                            d3.select('#tooltip').style('display', 'block');
                             });
 
                 d3.selectAll('circle')
@@ -113,8 +116,6 @@
                                 .attr('r', 8)
                                 .style('opacity', 0.5)
                                 .style('stroke-width', 1)
-
-                            // d3.select('#tooltip').classed('hidden', true);
                             });
             }
 
@@ -130,7 +131,7 @@
 
                 d3.select('svg')
                     .on('click', function(d) {
-                            d3.select('#tooltip').classed('hidden', true);
+                            d3.select('#tooltip').style('display', 'none');
                             })
 
                 // add axes
@@ -181,6 +182,7 @@
 
         </script>
         <style>
+            /* css style */
             .axis path, .axis line {
                 fill:none;
                 stroke:black;
@@ -204,17 +206,11 @@
                 height: auto;
                 padding: 10px;
                 background-color: white;
-                -webkit-border-radius: 10px;
-                -moz-border-radius: 10px;
-                border-radius: 10px;
-                -webkit-box-shadow: 4px 4px 10px rgba(0,0,0,0.4);
-                -moz-box-shadow: 4px 4px 10px rgba(0,0,0,0.4);
-                box-shadow: 4px 4px 10px rgba(0,0,0,0.4);
-                /* pointer-events: none; */
-            }
-
-            #tooltip.hidden {
                 display: none;
+                border-radius: 10px;
+                box-shadow: 4px 4px 10px rgba(0,0,0,0.4);
+                z-index: 10;
+                /* pointer-events: none; */
             }
 
             #tooltip p {
@@ -242,7 +238,7 @@
         </style>
     </head>
     <body>
-        <div id="tooltip" class="hidden">
+        <div id="tooltip">
             <p><strong>Chromophore class: </strong><span id="chromclass"></span></p>
             <p><strong>Excitation: </strong><span id="excitation"></span> nm</p>
             <p><strong>Emission: </strong><span id="emission"></span> nm</p>
@@ -250,19 +246,24 @@
             <p><strong>Genbank: </strong><a id="genbank"><span id="genbank_link"></span</a></p>
             <p><strong>Species: </strong><small><i><span id="species"></span></i></small></p>
         </div>
-        <div id="mainplot"></div>
-        <div id="input-panel">
-            <div id="selector">
-                <label for="chromclass_sel">Chromophore Class</label>
-                <select id="chromclass_sel">
-                        <option value="All">All</option>
-                </select>
+        <div class="row">
+            <div class="col-md-8" id="mainplot"></div>
+            <div class="col-md-4" style="padding-right:50px;" id="input-panel">
+                <div id="selector">
+                    <label for="chromclass_sel">Chromophore Class</label>
+                    <select id="chromclass_sel">
+                            <option value="All">All</option>
+                    </select>
+                </div>
+                <br>
+                <span id="excitation-range"></span>
+                <div id="excite-slider"></div>
+                <br>
+                <span id="emission-range"></span>
+                <div id="emiss-slider"></div>
+                <br><br>
+                <button type="button" id="reset-btn">Reset</button>
             </div>
-            <span id="excitation-range"></span>
-            <div id="excite-slider"></div>
-            <span id="emission-range"></span>
-            <div id="emiss-slider"></div>
-            <button type="button" id="reset-btn">Reset</button>
         </div>
         <script>
             $(document).ready(function() {
@@ -333,9 +334,7 @@
                     $('#chromclass_sel').on("selectmenuchange",
                             function(event, ui) {
                                 var chromclass = ui.item.value;
-                                console.log(chromclass)
-
-                                d3.select('#tooltip').classed('hidden', true);
+                                d3.select('#tooltip').style('display', 'none');
                                 d3.json("data/FPD-non-redundant-processed.json", draw_circles);
                             });
 
