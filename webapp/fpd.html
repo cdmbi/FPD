@@ -4,13 +4,18 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta charset="utf8">
         <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
-        <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
         <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
         <script src="js/d3/d3.js"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+        <script src="js/jquery.event.drag-2.2/jquery.event.drag-2.2.js"></script>
+        <script src="js/slickgrid/slick.core.js"></script>
+        <script src="js/slickgrid/slick.grid.js"></script>
+
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+        <link rel="stylesheet" href="js/slickgrid/slick.grid.css" type="text/css">
         <script>
-            var margin = 50, width = 800, height = 600;
+            var margin = 80, width = 800, height = 600;
 
             function draw_circles(data) {
 
@@ -42,6 +47,18 @@
                         .enter()
                         .append('circle')
                         .attr('r', 8)
+
+                curr_data = data.filter(function(d) {
+                        if ($('#chromclass_sel').val() === 'All') {
+                            return filter_excitation(d) && filter_emission(d);
+                        } else {
+                            return (d.chromophore_class === $('#chromclass_sel').val())
+                                        && filter_excitation(d) && filter_emission(d);
+                        }
+                    });
+
+                grid.setData(curr_data);
+                grid.invalidate();
 
                 var x_extent = d3.extent(data, function(d) { return parseFloat(d.emission_new) });
                 var x_scale = d3.scale.linear()
@@ -264,82 +281,104 @@
                 <br><br>
                 <button type="button" id="reset-btn">Reset</button>
             </div>
+            <div class="col-md-12" id="datagrid" style="width:800px;height:800px;"></div>
         </div>
-        <script>
+        <!-- <div id="datagrid" style="width:500px;height:800px;"></div> -->
+        <script type="text/javascript">
+            var grid;
+            var columns = [
+                {id: 'fpid', name: 'ID', field: 'fpid'},
+                {id: 'emission_new', name: 'Emission', field: 'emission_new'},
+                {id: 'excitation_new', name: 'Excitation', field: 'excitation_new'},
+                {id: 'chromophore_class', name: 'Chromophore class', field: 'chromophore_class'},
+                {id: 'genbank', name: 'Genbank', field: 'genbank'},
+                {id: 'pdb_id', name: 'PDB', field: 'pdb_id'},
+                {id: 'pka', name: 'pka', field: 'pka'},
+                {id: 'quantum_yield', name: 'Quantum Yield', field: 'quantum_yield'},
+            ];
+            var options = {
+                enableCellNavigation: true,
+                enableColumnReorder: false
+            };
+
+            var curr_data;
+
             $(document).ready(function() {
-                    d3.json("data/FPD-non-redundant-processed.json", function(error, data) {
-                            var chromophores = [];
-                            var excitation_value = [];
-                            var emission_value = [];
 
-                            for (var i = 0; i < data.length; i++) {
-                                var obj = data[i];
-                                chromophores.push(obj['chromophore_class']);
-                                excitation_value.push(parseFloat(obj['excitation_new']));
-                                emission_value.push(parseFloat(obj['emission_new']));
-                            }
-                            chromophores = $.unique(chromophores);
-                            chromophores.sort();
+                d3.json("data/FPD-non-redundant-processed.json", function(error, data) {
+                    curr_data = data;  // set data to global variable curr_data
+                    var chromophores = [];
+                    var excitation_value = [];
+                    var emission_value = [];
 
-                            console.log(excitation_value, emission_value);
+                    for (var i = 0; i < data.length; i++) {
+                        var obj = data[i];
+                        chromophores.push(obj['chromophore_class']);
+                        excitation_value.push(parseFloat(obj['excitation_new']));
+                        emission_value.push(parseFloat(obj['emission_new']));
+                    }
+                    chromophores = $.unique(chromophores);
+                    chromophores.sort();
 
-                            d3.select('#chromclass_sel')
-                            .selectAll('option')
-                            .data(chromophores)
-                            .enter()
-                            .append('option')
-                            .attr('value', function(d) { return d })
-                            .text(function(d) { return d})
+                    d3.select('#chromclass_sel')
+                    .selectAll('option')
+                    .data(chromophores)
+                    .enter()
+                    .append('option')
+                    .attr('value', function(d) { return d })
+                    .text(function(d) { return d})
+
+                    grid = new Slick.Grid('#datagrid', curr_data, columns, options);
+                });
+
+                $('#excitation-range')
+                    .text('Excitation: ' + 300 + '-' + 700);
+                $('#emission-range')
+                    .text('Emission: ' + 300 + '-' + 700);
+
+                $('#reset-btn').button().click(function(event) {
+                        window.location.reload(true);
                         });
 
-                    $('#excitation-range')
-                        .text('Excitation: ' + 300 + '-' + 700);
-                    $('#emission-range')
-                        .text('Emission: ' + 300 + '-' + 700);
+                $('#excite-slider').slider({
+                    range: true,
+                    min: 340,
+                    max: 700,
+                    values: [340, 700],
+                    slide: function(event, ui) {
+                        $('#excitation-range')
+                            .text('Excitation: ' + ui.values[0] + '-' + ui.values[1]);
 
-                    $('#reset-btn').button().click(function(event) {
-                            window.location.reload(true);
-                            });
+                        d3.select('#tooltip').classed('hidden', true);
+                        d3.json("data/FPD-non-redundant-processed.json", draw_circles);
+                        }
+                    });
 
-                    $('#excite-slider').slider({
-                        range: true,
-                        min: 340,
-                        max: 700,
-                        values: [340, 700],
-                        slide: function(event, ui) {
-                            $('#excitation-range')
-                                .text('Excitation: ' + ui.values[0] + '-' + ui.values[1]);
+                $('#emiss-slider').slider({
+                    range: true,
+                    min: 400,
+                    max: 720,
+                    values: [400, 720],
+                    slide: function(event, ui) {
+                        $('#emission-range')
+                            .text('Emission: ' + ui.values[0] + '-' + ui.values[1]);
 
-                            d3.select('#tooltip').classed('hidden', true);
+                        d3.select('#tooltip').classed('hidden', true);
+                        d3.json("data/FPD-non-redundant-processed.json", draw_circles);
+                        }
+                    });
+
+                $('#chromclass_sel').selectmenu().selectmenu("menuWidget").addClass('overflow');
+                $('#chromclass_sel').selectmenu("option", "width", 200);
+                $('#chromclass_sel').on("selectmenuchange",
+                        function(event, ui) {
+                            var chromclass = ui.item.value;
+                            d3.select('#tooltip').style('display', 'none');
                             d3.json("data/FPD-non-redundant-processed.json", draw_circles);
-                            }
                         });
 
-                    $('#emiss-slider').slider({
-                        range: true,
-                        min: 400,
-                        max: 720,
-                        values: [400, 720],
-                        slide: function(event, ui) {
-                            $('#emission-range')
-                                .text('Emission: ' + ui.values[0] + '-' + ui.values[1]);
-
-                            d3.select('#tooltip').classed('hidden', true);
-                            d3.json("data/FPD-non-redundant-processed.json", draw_circles);
-                            }
-                        });
-
-                    $('#chromclass_sel').selectmenu().selectmenu("menuWidget").addClass('overflow');
-                    $('#chromclass_sel').selectmenu("option", "width", 200);
-                    $('#chromclass_sel').on("selectmenuchange",
-                            function(event, ui) {
-                                var chromclass = ui.item.value;
-                                d3.select('#tooltip').style('display', 'none');
-                                d3.json("data/FPD-non-redundant-processed.json", draw_circles);
-                            });
-
-            d3.json("data/FPD-non-redundant-processed.json", draw);
-            })
+                d3.json("data/FPD-non-redundant-processed.json", draw);
+            });
         </script>
     </body>
 </html>
