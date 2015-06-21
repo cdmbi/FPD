@@ -15,14 +15,39 @@ var options = {
     enableColumnReorder: false
 };
 
-var curr_data;
+var data, curr_data;
 
 var margin = 80, width = 800, height = 600;
 var yslider_min, yslider_max, xslider_min, xslider_max;
-var x_field = 'quantum_yield';
-var y_field = 'pka';
+var x_field = 'emission_new';
+var y_field = 'excitation_new';
+var x_extent, x_scale, y_extent, y_scale;
+var x_axis, y_axis;
 
-function draw_circles(data) {
+function filter_data() {
+    function filter_y(d) {
+        if (parseFloat(d[y_field]) + 1 > 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function filter_x(d) {
+        if (parseFloat(d[x_field]) + 1 > 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    curr_data = data.filter(function(d) {
+        return filter_y(d) && filter_x(d);
+    });
+    console.log(data.length, curr_data.length);
+}
+
+function update_sliders_change() {
 
     var yslider_lo = $('#yslider').slider("option", "values")[0];
     var yslider_hi = $('#yslider').slider("option", "values")[1];
@@ -30,68 +55,145 @@ function draw_circles(data) {
     var xslider_hi = $('#xslider').slider("option", "values")[1];
 
     function filter_y(d) {
-        if (d[y_field] === '') {
-            return false;
-        } else {
+        if (parseFloat(d[y_field]) + 1 > 0) {
             return (parseFloat(d[y_field]) >= yslider_lo && parseFloat(d[y_field]) <= yslider_hi);
+        } else {
+            return false;
         }
     }
 
     function filter_x(d) {
-        if (d[x_field] === '') {
-            return false;
-        } else {
+        if (parseFloat(d[x_field]) + 1 > 0) {
             return (parseFloat(d[x_field]) >= xslider_lo && parseFloat(d[x_field]) <= xslider_hi);
+        } else {
+            return false;
         }
     }
 
+    console.log('update data...')
+    curr_data = data.filter(function(d) {
+        if ($('#chromclass_sel').val() === 'All') {
+            return filter_y(d) && filter_x(d);
+        } else {
+            return (d.chromophore_class === $('#chromclass_sel').val())
+                        && filter_y(d) && filter_x(d);
+        }
+    });
+}
+function create_scales() {
+    x_extent = d3.extent(curr_data, function(d) { return parseFloat(d[x_field]) });
+    x_scale = d3.scale.linear().range([margin, width-margin]).domain(x_extent);
+
+    y_extent = d3.extent(curr_data, function(d) { return parseFloat(d[y_field]) });
+    y_scale = d3.scale.linear().range([height-margin, margin]).domain(y_extent);
+
+    x_axis = d3.svg.axis()
+        .scale(x_scale)
+        .orient("bottom")
+
+    y_axis = d3.svg.axis()
+        .scale(y_scale)
+        .orient("left");
+
+    d3.select('.x.axis').remove();
+    d3.select('.y.axis').remove();
+    d3.select('.x.axis').select('text').remove();
+
+    d3.select('svg')
+        .append('g')
+            .attr('class', 'x axis')
+            .attr('transform', 'translate(0,' + (height-margin) + ')')
+        .call(x_axis);
+
+    d3.select('svg')
+        .append('g')
+            .attr('class', 'y axis')
+            .attr('transform', 'translate(' + margin + ',0)')
+        .call(y_axis);
+
+    // add axis title
+    d3.select('.x.axis')
+        .append('text')
+            .text(x_field)
+            .attr('x', (width/2)-margin)
+            .attr('y', margin / 1.5);
+}
+
+// function update_scale(data) {
+//     x_extent = d3.extent(data, function(d) { return parseFloat(d[x_field]) });
+//     x_scale.range([margin, width-margin]).domain(x_extent);
+// 
+//     y_extent = d3.extent(data, function(d) { return parseFloat(d[y_field]) });
+//     y_scale.range([height-margin, margin]).domain(y_extent);
+// 
+//     d3.select('svg')
+//         .transition()
+//         .duration(1000)
+//         .call(x_axis);
+// 
+//     d3.select('svg')
+//         .transition()
+//         .duration(1000)
+//         .call(y_axis);
+// }
+
+function draw_circles() {
+
+    // remove existing circles
     d3.select('svg')
         .selectAll('circle')
         .remove();
 
+    // grid.setData(curr_data);
+    // grid.invalidate();
     d3.select('svg')
         .selectAll('circle')
-            .data(data.filter(function(d) {
-                    if ($('#chromclass_sel').val() === 'All') {
-                        return filter_y(d) && filter_x(d);
-                    } else {
-                        return (d.chromophore_class === $('#chromclass_sel').val())
-                                    && filter_y(d) && filter_x(d);
-                    }}))
+            .data(curr_data)
             .enter()
             .append('circle')
             .attr('r', 8)
+            .style('fill', function(d){return d.excitation_color_new})
+            .style('opacity', 0.5)
+            .style('stroke', 'black')
+            .style('stroke-width', 1)
+            .attr('cx', function(d){return x_scale(parseFloat(d[x_field]))})
+            .attr('cy', function(d){return y_scale(parseFloat(d[y_field]))})
 
-    curr_data = data.filter(function(d) {
-            if ($('#chromclass_sel').val() === 'All') {
-                return filter_y(d) && filter_x(d);
-            } else {
-                return (d.chromophore_class === $('#chromclass_sel').val())
-                            && filter_y(d) && filter_x(d);
-            }
-        });
+    add_tooltips(curr_data);
+}
+
+function draw_circles_transition() {
+    // remove existing circles
+    d3.select('svg')
+        .selectAll('circle')
+        .remove();
 
     grid.setData(curr_data);
     grid.invalidate();
 
-    var x_extent = d3.extent(data, function(d) { return parseFloat(d[x_field]) });
-    var x_scale = d3.scale.linear()
-        .range([margin, width-margin])
-        .domain(x_extent);
+    console.log('inside draw_circles_transition');
+    console.log(x_field, y_field);
+    d3.select('svg')
+        .selectAll('circle')
+            .data(curr_data)
+            .enter()
+            .append('circle')
+            .attr('cx', function(d){return x_scale(parseFloat(d[x_field]))})
+            .attr('cy', height-margin)
+            .attr('r', 8)
+            .style('fill', function(d){return d.excitation_color_new})
+            .style('opacity', 0.5)
+            .style('stroke', 'black')
+            .style('stroke-width', 1)
+            .transition()
+            .duration(500)
+            .attr('cx', function(d){return x_scale(parseFloat(d[x_field]))})
+            .attr('cy', function(d){return y_scale(parseFloat(d[y_field]))})
 
-    var y_extent = d3.extent(data, function(d) { return parseFloat(d[y_field]) });
-    var y_scale = d3.scale.linear()
-        .range([height-margin, margin])
-        .domain(y_extent);
+    add_tooltips(curr_data);
+}
 
-    d3.selectAll('circle')
-        .attr('cx', function(d){return x_scale(parseFloat(d[x_field]))})
-        .attr('cy', function(d){return y_scale(parseFloat(d[y_field]))})
-        .style('fill', function(d){return d.excitation_color_new})
-        .style('opacity', 0.5)
-        .style('stroke', 'black')
-        .style('stroke-width', 1)
-
+function add_tooltips() {
     d3.selectAll('circle')
         .on('mouseover', function(d) {
                 d3.select(this)
@@ -156,82 +258,81 @@ function draw_circles(data) {
                     .style('opacity', 0.5)
                     .style('stroke-width', 1)
                 });
-}
-
-function draw(data) {
-    "use strict";
-
-    d3.select('#mainplot')
-        .append('svg')
-            .attr('width', width)
-            .attr('height', height);
-
-    draw_circles(data);
 
     d3.select('svg')
         .on('click', function(d) {
                 d3.select('#tooltip').style('display', 'none');
                 })
-
-    // add axes
-
-    var x_extent = d3.extent(
-            data, function(d) { return parseFloat(d[x_field]) }
-            );
-
-    var x_scale = d3.scale.linear()
-        .domain(x_extent)
-        .range([margin, width-margin]);
-
-    var x_axis = d3.svg.axis()
-        .scale(x_scale)
-
-    var y_extent = d3.extent(
-            data, function(d) { return parseFloat(d[y_field]) }
-            );
-
-    var y_scale = d3.scale.linear()
-        .domain(y_extent)
-        .range([height-margin, margin]);
-
-    var y_axis = d3.svg.axis()
-        .scale(y_scale)
-        .orient('left');
-
-    d3.select('svg')
-        .append('g')
-            .attr('class', 'x axis')
-            .attr('transform', 'translate(0,' + (height-margin) + ')')
-        .call(x_axis);
-
-    d3.select('svg')
-        .append('g')
-            .attr('class', 'y axis')
-            .attr('transform', 'translate(' + margin + ',0)')
-        .call(y_axis);
-
-    // add axis title
-    d3.select('.x.axis')
-        .append('text')
-            .text(x_field)
-            .attr('x', (width/2)-margin)
-            .attr('y', margin / 1.5);
-
 }
 
 $(document).ready(function() {
 
     // create some main components
-    d3.json("data/FPD-non-redundant-processed.json", function(error, data) {
+    d3.json("data/FPD-non-redundant-processed.json", function(error, input_data) {
+        data = input_data;
+
+        d3.select('#mainplot')
+            .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+        // filter data
+        filter_data(data);
+
+        // create selectors
+        create_chrom_selector();
+        create_xyselectors();
+
+        // create sliders
+        create_sliders();
+
+        // create scales and axes
+        create_scales();
+
+        // add a reload button
+        $('#reset-btn').button().click(function(event) {
+                window.location.reload(true);
+            });
+
+        // draw initial circles for excitation vs emission
+        d3.select('svg')
+            .selectAll('circle')
+                .data(curr_data)
+                .enter()
+                .append('circle')
+                .attr('cx', function(d){return x_scale(parseFloat(d[x_field]))})
+                .attr('cy', height-margin)
+                .attr('r', 8)
+                .style('fill', function(d){return d.excitation_color_new})
+                .style('opacity', 0.5)
+                .style('stroke', 'black')
+                .style('stroke-width', 1)
+                .transition()
+                .duration(500)
+                .attr('cx', function(d){return x_scale(parseFloat(d[x_field]))})
+                .attr('cy', function(d){return y_scale(parseFloat(d[y_field]))})
+
+        add_tooltips();
+
+        // add data grid for filtered data
+        grid = new Slick.Grid('#datagrid', curr_data, columns, options);
+
+    });
+
+    function create_chrom_selector() {
+        d3.select('#chromclass_sel')
+            .selectAll('option')
+            .remove();
 
         var chromophores = [];
 
-        for (var i = 0; i < data.length; i++) {
-            var obj = data[i];
+        for (var i = 0; i < curr_data.length; i++) {
+            var obj = curr_data[i];
             chromophores.push(obj['chromophore_class']);
         }
         chromophores = $.unique(chromophores);
         chromophores.sort();
+        chromophores.splice(0, 0, 'All');
 
         d3.select('#chromclass_sel')
             .selectAll('option')
@@ -241,26 +342,53 @@ $(document).ready(function() {
             .attr('value', function(d) { return d })
             .text(function(d) { return d})
 
-        grid = new Slick.Grid('#datagrid', data, columns, options);
-    });
+        $('#chromclass_sel').selectmenu().selectmenu("menuWidget").addClass('overflow');
+        $('#chromclass_sel').selectmenu("option", "width", 200);
+        $('#chromclass_sel').on("selectmenuchange",
+                function(event, ui) {
+                    var chromclass = ui.item.value;
+                    d3.select('#tooltip').style('display', 'none');
+                    update_sliders_change(data);
+                    draw_circles();
+                });
+    }
 
-    // TODO: create a function that will sets up sliders according to x and y variables.
+    function create_xyselectors() {
+        $('#x_selector')
+            .selectmenu()
+            .on("selectmenuchange", function(event, ui) {
+                x_field = ui.item.value;
+                filter_data();
+                create_scales();
+                create_chrom_selector();
+                create_sliders();
+                draw_circles_transition();
+            });
 
-    // need to refactor so that data is not reloaded again here.
-    d3.json("data/FPD-non-redundant-processed.json", create_sliders);
+        $('#y_selector')
+            .selectmenu()
+            .on("selectmenuchange", function(event, ui) {
+                y_field = ui.item.value;
+                filter_data();
+                create_scales();
+                create_chrom_selector();
+                create_sliders();
+                draw_circles_transition();
+            });
+    }
 
-    function create_sliders(data) {
+    function create_sliders() {
         // code for setting up sliders go here.
-        yrange_max = d3.max(data, function(d) {
+        yrange_max = d3.max(curr_data, function(d) {
                 return parseFloat(d[y_field]);
             });
-        yrange_min = d3.min(data, function(d) {
+        yrange_min = d3.min(curr_data, function(d) {
                 return parseFloat(d[y_field]);
             });
-        xrange_max = d3.max(data, function(d) {
+        xrange_max = d3.max(curr_data, function(d) {
                 return parseFloat(d[x_field]);
             });
-        xrange_min = d3.min(data, function(d) {
+        xrange_min = d3.min(curr_data, function(d) {
                 return parseFloat(d[x_field]);
             });
 
@@ -277,8 +405,8 @@ $(document).ready(function() {
                     .text(y_field + ' ' + ui.values[0] + '-' + ui.values[1]);
 
                 d3.select('#tooltip').classed('hidden', true);
-                // TODO: should directly call draw_circles with data as a parameter.
-                d3.json("data/FPD-non-redundant-processed.json", draw_circles);
+                update_sliders_change();
+                draw_circles();
                 }
             });
 
@@ -292,40 +420,9 @@ $(document).ready(function() {
                     .text(x_field + ' ' + ui.values[0] + '-' + ui.values[1]);
 
                 d3.select('#tooltip').classed('hidden', true);
-                // TODO: should directly call draw_circles with data as a parameter.
-                d3.json("data/FPD-non-redundant-processed.json", draw_circles);
+                update_sliders_change();
+                draw_circles();
                 }
             });
     }
-
-    $('#reset-btn').button().click(function(event) {
-            window.location.reload(true);
-            });
-
-
-    $('#chromclass_sel').selectmenu().selectmenu("menuWidget").addClass('overflow');
-    $('#chromclass_sel').selectmenu("option", "width", 200);
-    $('#chromclass_sel').on("selectmenuchange",
-            function(event, ui) {
-                var chromclass = ui.item.value;
-                d3.select('#tooltip').style('display', 'none');
-                d3.json("data/FPD-non-redundant-processed.json", draw_circles);
-            });
-
-    $('#x_selector')
-        .selectmenu()
-        .on("selectmenuchange", function(event, ui) {
-            x_field = ui.item.value;
-            d3.json("data/FPD-non-redundant-processed.json", create_sliders);
-            d3.json("data/FPD-non-redundant-processed.json", draw_circles);
-        });
-    $('#y_selector')
-        .selectmenu()
-        .on("selectmenuchange", function(event, ui) {
-            y_field = ui.item.value;
-            d3.json("data/FPD-non-redundant-processed.json", create_sliders);
-            d3.json("data/FPD-non-redundant-processed.json", draw_circles);
-        });
-
-    d3.json("data/FPD-non-redundant-processed.json", draw);
 });
