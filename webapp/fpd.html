@@ -14,251 +14,13 @@
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
         <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
         <link rel="stylesheet" href="js/slickgrid/slick.grid.css" type="text/css">
-        <script>
-            var margin = 80, width = 800, height = 600;
-
-            function draw_circles(data) {
-
-                var excitation_min = $('#excite-slider').slider("option", "values")[0];
-                var excitation_max = $('#excite-slider').slider("option", "values")[1];
-                var emission_min = $('#emiss-slider').slider("option", "values")[0];
-                var emission_max = $('#emiss-slider').slider("option", "values")[1];
-
-                function filter_excitation(d) {
-                    return (d.excitation_new >= excitation_min) && (d.excitation_new <= excitation_max);
-                }
-
-                function filter_emission(d) {
-                    return (d.emission_new >= emission_min) && (d.emission_new <= emission_max);
-                }
-                d3.select('svg')
-                    .selectAll('circle')
-                    .remove();
-
-                d3.select('svg')
-                    .selectAll('circle')
-                        .data(data.filter(function(d) {
-                                if ($('#chromclass_sel').val() === 'All') {
-                                    return filter_excitation(d) && filter_emission(d);
-                                } else {
-                                    return (d.chromophore_class === $('#chromclass_sel').val())
-                                                && filter_excitation(d) && filter_emission(d);
-                                }}))
-                        .enter()
-                        .append('circle')
-                        .attr('r', 8)
-
-                curr_data = data.filter(function(d) {
-                        if ($('#chromclass_sel').val() === 'All') {
-                            return filter_excitation(d) && filter_emission(d);
-                        } else {
-                            return (d.chromophore_class === $('#chromclass_sel').val())
-                                        && filter_excitation(d) && filter_emission(d);
-                        }
-                    });
-
-                grid.setData(curr_data);
-                grid.invalidate();
-
-                var x_extent = d3.extent(data, function(d) { return parseFloat(d.emission_new) });
-                var x_scale = d3.scale.linear()
-                    .range([margin, width-margin])
-                    .domain(x_extent);
-
-                var y_extent = d3.extent(data, function(d) { return parseFloat(d.excitation_new) });
-                var y_scale = d3.scale.linear()
-                    .range([height-margin, margin])
-                    .domain(y_extent);
-
-                d3.selectAll('circle')
-                    .attr('cx', function(d){return x_scale(parseFloat(d.emission_new))})
-                    .attr('cy', function(d){return y_scale(parseFloat(d.excitation_new))})
-                    .style('fill', function(d){return d.excitation_color_new})
-                    .style('opacity', 0.5)
-                    .style('stroke', 'black')
-                    .style('stroke-width', 1)
-
-                d3.selectAll('circle')
-                    .on('mouseover', function(d) {
-                            d3.select(this)
-                                .transition()
-                                .attr('r', 16)
-                                .style('opacity', 1)
-                                .style('stroke-width', 2)
-
-                            var x_position = parseFloat(d3.select(this).attr('cx')) + 30;
-                            var y_position = parseFloat(d3.select(this).attr('cy')) - 30;
-
-                            d3.select('#tooltip').style('display', 'none');
-
-                            d3.select('#tooltip')
-                                .style('left', x_position + 'px')
-                                .style('top', y_position + 'px')
-                                .select('#excitation')
-                                .text(d.excitation_new)
-
-                            d3.select('#tooltip')
-                                .select('#emission')
-                                .text(d.emission_new)
-
-                            d3.select('#tooltip')
-                                .select('#chromclass')
-                                .text(d.chromophore_class);
-
-                            d3.select('#tooltip')
-                                .select('#genbank')
-                                    .attr('href', 'http://www.ncbi.nlm.nih.gov/nuccore/' + d.genbank)
-                                    .attr('target', '_blank')
-                                .select('#genbank_link')
-                                    .text(d.genbank)
-
-                            d3.select('#tooltip')
-                                .select('#uniprot')
-                                    .attr('href', 'http://www.uniprot.org/uniprot/' + d.uniprot_id)
-                                    .attr('target', '_blank')
-                                .select('#uniprot_link')
-                                    .text(d.uniprot_id)
-
-                            d3.select('#tooltip')
-                                .select('#species')
-                                .text(d.species);
-
-                            d3.select('#tooltip').style('display', 'block');
-                            });
-
-                d3.selectAll('circle')
-                    .on('mouseout', function(d) {
-                            d3.select(this)
-                                .transition()
-                                .attr('r', 8)
-                                .style('opacity', 0.5)
-                                .style('stroke-width', 1)
-                            });
-            }
-
-            function draw(data) {
-                "use strict";
-
-                d3.select('#mainplot')
-                    .append('svg')
-                        .attr('width', width)
-                        .attr('height', height);
-
-                draw_circles(data);
-
-                d3.select('svg')
-                    .on('click', function(d) {
-                            d3.select('#tooltip').style('display', 'none');
-                            })
-
-                // add axes
-
-                var emission_extent = d3.extent(
-                        data, function(d) { return parseFloat(d.emission_new) }
-                        );
-
-                var emission_scale = d3.scale.linear()
-                    .domain(emission_extent)
-                    .range([margin, width-margin]);
-
-                var emission_axis = d3.svg.axis()
-                    .scale(emission_scale)
-
-                var excitation_extent = d3.extent(
-                        data, function(d) { return parseFloat(d.excitation_new) }
-                        );
-
-                var excitation_scale = d3.scale.linear()
-                    .domain(excitation_extent)
-                    .range([height-margin, margin]);
-
-                var excitation_axis = d3.svg.axis()
-                    .scale(excitation_scale)
-                    .orient('left');
-
-                d3.select('svg')
-                    .append('g')
-                        .attr('class', 'x axis')
-                        .attr('transform', 'translate(0,' + (height-margin) + ')')
-                    .call(emission_axis);
-
-                d3.select('svg')
-                    .append('g')
-                        .attr('class', 'y axis')
-                        .attr('transform', 'translate(' + margin + ',0)')
-                    .call(excitation_axis);
-
-                // add axis title
-                d3.select('.x.axis')
-                    .append('text')
-                        .text('Emission')
-                        .attr('x', (width/2)-margin)
-                        .attr('y', margin / 1.5);
-
-            }
-
-        </script>
-        <style>
-            /* css style */
-            .axis path, .axis line {
-                fill:none;
-                stroke:black;
-                stroke-width: 1;
-                shape-rendering: crispEdges;
-            }
-
-            .axis {
-                font-size:8pt;
-                font-family:sans-serif;
-            }
-
-            .tick {
-                fill:none;
-                stroke:black;
-            }
-
-            #tooltip {
-                position: absolute;
-                width: 200px;
-                height: auto;
-                padding: 10px;
-                background-color: white;
-                display: none;
-                border-radius: 10px;
-                box-shadow: 4px 4px 10px rgba(0,0,0,0.4);
-                z-index: 10;
-                /* pointer-events: none; */
-            }
-
-            #tooltip p {
-                margin: 0;
-                font-family: sans-serif;
-                font-size: 16px;
-                line-height: 20px;
-            }
-
-            #input-panel {
-                float: right;
-                width: 400px;
-                height: 500px;
-            }
-            #slider {
-                width: 100%;
-            }
-            .overflow {
-                height: 300px;
-            }
-            .ui-widget {
-                font-size: 12px;
-            }
-
-        </style>
+        <link rel="stylesheet" href="main.css" type="text/css">
     </head>
     <body>
         <div id="tooltip">
             <p><strong>Chromophore class: </strong><span id="chromclass"></span></p>
-            <p><strong>Excitation: </strong><span id="excitation"></span> nm</p>
-            <p><strong>Emission: </strong><span id="emission"></span> nm</p>
+            <p><strong><span id="tooltip-xlabel"></span></strong><span id="xvalue"></span></p>
+            <p><strong><span id="tooltip-ylabel"></span></strong><span id="yvalue"></span></p>
             <p><strong>Uniprot ID: </strong><a id="uniprot"><span id="uniprot_link"></span></a></p>
             <p><strong>Genbank: </strong><a id="genbank"><span id="genbank_link"></span</a></p>
             <p><strong>Species: </strong><small><i><span id="species"></span></i></small></p>
@@ -272,113 +34,33 @@
                             <option value="All">All</option>
                     </select>
                 </div>
+                <div id="xy_selector">
+                    <label for="chromclass_sel">X Axis</label>
+                    <select id="x_selector">
+                            <option value="excitation_new">Excitation</option>
+                            <option value="emission_new">Emission</option>
+                            <option value="pka">pKa</option>
+                            <option value="quantum_yield">Quantum Yield</option>
+                    </select>
+                    <label for="y_selector">Y Axis</label>
+                    <select id="y_selector">
+                            <option value="excitation_new">Excitation</option>
+                            <option value="emission_new">Emission</option>
+                            <option value="pka">pKa</option>
+                            <option value="quantum_yield">Quantum Yield</option>
+                    </select>
+                </div>
                 <br>
-                <span id="excitation-range"></span>
-                <div id="excite-slider"></div>
+                <span id="yrange"></span>
+                <div id="yslider"></div>
                 <br>
-                <span id="emission-range"></span>
-                <div id="emiss-slider"></div>
+                <span id="xrange"></span>
+                <div id="xslider"></div>
                 <br><br>
                 <button type="button" id="reset-btn">Reset</button>
             </div>
             <div class="col-md-12" id="datagrid" style="width:800px;height:800px;"></div>
         </div>
-        <!-- <div id="datagrid" style="width:500px;height:800px;"></div> -->
-        <script type="text/javascript">
-            var grid;
-            var columns = [
-                {id: 'fpid', name: 'ID', field: 'fpid'},
-                {id: 'emission_new', name: 'Emission', width: 100, field: 'emission_new', sortable: true},
-                {id: 'excitation_new', name: 'Excitation', width: 100, field: 'excitation_new', sortable: true},
-                {id: 'chromophore_class', name: 'Chromophore class', width: 100, field: 'chromophore_class'},
-                {id: 'genbank', name: 'Genbank', width: 100, field: 'genbank'},
-                {id: 'pdb_id', name: 'PDB', width: 100, field: 'pdb_id'},
-                {id: 'pka', name: 'pka', width: 100, field: 'pka'},
-                {id: 'quantum_yield', name: 'Quantum Yield', width: 100, field: 'quantum_yield'},
-            ];
-            var options = {
-                enableCellNavigation: true,
-                enableColumnReorder: false
-            };
-
-            var curr_data;
-
-            $(document).ready(function() {
-
-                d3.json("data/FPD-non-redundant-processed.json", function(error, data) {
-                    curr_data = data;  // set data to global variable curr_data
-                    var chromophores = [];
-                    var excitation_value = [];
-                    var emission_value = [];
-
-                    for (var i = 0; i < data.length; i++) {
-                        var obj = data[i];
-                        chromophores.push(obj['chromophore_class']);
-                        excitation_value.push(parseFloat(obj['excitation_new']));
-                        emission_value.push(parseFloat(obj['emission_new']));
-                    }
-                    chromophores = $.unique(chromophores);
-                    chromophores.sort();
-
-                    d3.select('#chromclass_sel')
-                    .selectAll('option')
-                    .data(chromophores)
-                    .enter()
-                    .append('option')
-                    .attr('value', function(d) { return d })
-                    .text(function(d) { return d})
-
-                    grid = new Slick.Grid('#datagrid', curr_data, columns, options);
-                });
-
-                $('#excitation-range')
-                    .text('Excitation: ' + 300 + '-' + 700);
-                $('#emission-range')
-                    .text('Emission: ' + 300 + '-' + 700);
-
-                $('#reset-btn').button().click(function(event) {
-                        window.location.reload(true);
-                        });
-
-                $('#excite-slider').slider({
-                    range: true,
-                    min: 340,
-                    max: 700,
-                    values: [340, 700],
-                    slide: function(event, ui) {
-                        $('#excitation-range')
-                            .text('Excitation: ' + ui.values[0] + '-' + ui.values[1]);
-
-                        d3.select('#tooltip').classed('hidden', true);
-                        d3.json("data/FPD-non-redundant-processed.json", draw_circles);
-                        }
-                    });
-
-                $('#emiss-slider').slider({
-                    range: true,
-                    min: 400,
-                    max: 720,
-                    values: [400, 720],
-                    slide: function(event, ui) {
-                        $('#emission-range')
-                            .text('Emission: ' + ui.values[0] + '-' + ui.values[1]);
-
-                        d3.select('#tooltip').classed('hidden', true);
-                        d3.json("data/FPD-non-redundant-processed.json", draw_circles);
-                        }
-                    });
-
-                $('#chromclass_sel').selectmenu().selectmenu("menuWidget").addClass('overflow');
-                $('#chromclass_sel').selectmenu("option", "width", 200);
-                $('#chromclass_sel').on("selectmenuchange",
-                        function(event, ui) {
-                            var chromclass = ui.item.value;
-                            d3.select('#tooltip').style('display', 'none');
-                            d3.json("data/FPD-non-redundant-processed.json", draw_circles);
-                        });
-
-                d3.json("data/FPD-non-redundant-processed.json", draw);
-            });
-        </script>
+        <script src="js/main.js"></script>
     </body>
 </html>
