@@ -44,6 +44,10 @@ function filter_data() {
     curr_data = data.filter(function(d) {
         return filter_y(d) && filter_x(d);
     });
+
+    grid.setData(curr_data);
+    grid.invalidate();
+
     console.log(data.length, curr_data.length);
 }
 
@@ -79,6 +83,10 @@ function update_sliders_change() {
                         && filter_y(d) && filter_x(d);
         }
     });
+
+    grid.setData(curr_data);
+    grid.invalidate();
+
 }
 function create_scales() {
     x_extent = d3.extent(curr_data, function(d) { return parseFloat(d[x_field]) });
@@ -144,8 +152,6 @@ function draw_circles() {
         .selectAll('circle')
         .remove();
 
-    // grid.setData(curr_data);
-    // grid.invalidate();
     d3.select('svg')
         .selectAll('circle')
             .data(curr_data)
@@ -167,9 +173,6 @@ function draw_circles_transition() {
     d3.select('svg')
         .selectAll('circle')
         .remove();
-
-    grid.setData(curr_data);
-    grid.invalidate();
 
     console.log('inside draw_circles_transition');
     console.log(x_field, y_field);
@@ -276,6 +279,9 @@ $(document).ready(function() {
                 .attr('width', width)
                 .attr('height', height);
 
+        // add data grid for filtered data
+        grid = new Slick.Grid('#datagrid', data, columns, options);
+
         // filter data
         filter_data(data);
 
@@ -313,9 +319,6 @@ $(document).ready(function() {
                 .attr('cy', function(d){return y_scale(parseFloat(d[y_field]))})
 
         add_tooltips();
-
-        // add data grid for filtered data
-        grid = new Slick.Grid('#datagrid', curr_data, columns, options);
 
     });
 
