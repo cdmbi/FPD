@@ -1,23 +1,6 @@
-var grid;
-var columns = [
-    {id: 'fpid', name: 'ID', field: 'fpid'},
-    {id: 'emission_new', name: 'Emission', width: 100, field: 'emission_new', sortable: true},
-    {id: 'excitation_new', name: 'Excitation', width: 100, field: 'excitation_new', sortable: true},
-    {id: 'chromophore_class', name: 'Chromophore class', width: 100, field: 'chromophore_class'},
-    {id: 'genbank', name: 'Genbank', width: 100, field: 'genbank'},
-    {id: 'pdb_id', name: 'PDB', width: 100, field: 'pdb_id'},
-    {id: 'pka', name: 'pka', width: 100, field: 'pka'},
-    {id: 'quantum_yield', name: 'Quantum Yield', width: 100, field: 'quantum_yield'},
-];
+var data, curr_data, table;
 
-var options = {
-    enableCellNavigation: true,
-    enableColumnReorder: false
-};
-
-var data, curr_data;
-
-var margin = 80, width = 800, height = 600;
+var margin = 80, width = 700, height = 600;
 var yslider_min, yslider_max, xslider_min, xslider_max;
 var x_field = 'emission_new';
 var y_field = 'excitation_new';
@@ -45,9 +28,8 @@ function filter_data() {
         return filter_y(d) && filter_x(d);
     });
 
-    grid.setData(curr_data);
-    grid.invalidate();
-
+    // grid.setData(curr_data);
+    // grid.invalidate();
     console.log(data.length, curr_data.length);
 }
 
@@ -74,7 +56,6 @@ function update_sliders_change() {
         }
     }
 
-    console.log('update data...')
     curr_data = data.filter(function(d) {
         if ($('#chromclass_sel').val() === 'All') {
             return filter_y(d) && filter_x(d);
@@ -84,8 +65,8 @@ function update_sliders_change() {
         }
     });
 
-    grid.setData(curr_data);
-    grid.invalidate();
+    // grid.setData(curr_data);
+    // grid.invalidate();
 
 }
 function create_scales() {
@@ -205,8 +186,8 @@ function add_tooltips() {
                     .style('opacity', 1)
                     .style('stroke-width', 2)
 
-                var x_position = parseFloat(d3.select(this).attr('cx')) + 30;
-                var y_position = parseFloat(d3.select(this).attr('cy')) - 30;
+                var x_position = parseFloat(d3.select(this).attr('cx'));
+                var y_position = parseFloat(d3.select(this).attr('cy'));
 
                 d3.select('#tooltip').style('display', 'none');
 
@@ -280,10 +261,14 @@ $(document).ready(function() {
                 .attr('height', height);
 
         // add data grid for filtered data
-        grid = new Slick.Grid('#datagrid', data, columns, options);
+        // grid = new Slick.Grid('#datagrid', data, columns, options);
+
 
         // filter data
         filter_data(data);
+
+        // create data table
+        create_table();
 
         // create selectors
         create_chrom_selector();
@@ -353,6 +338,7 @@ $(document).ready(function() {
                     d3.select('#tooltip').style('display', 'none');
                     update_sliders_change(data);
                     draw_circles();
+                    table.clear().rows.add(curr_data).draw();
                 });
     }
 
@@ -366,6 +352,7 @@ $(document).ready(function() {
                 create_chrom_selector();
                 create_sliders();
                 draw_circles_transition();
+                table.clear().rows.add(curr_data).draw();
             });
 
         $('#y_selector')
@@ -377,6 +364,7 @@ $(document).ready(function() {
                 create_chrom_selector();
                 create_sliders();
                 draw_circles_transition();
+                table.clear().rows.add(curr_data).draw();
             });
     }
 
@@ -410,6 +398,7 @@ $(document).ready(function() {
                 d3.select('#tooltip').classed('hidden', true);
                 update_sliders_change();
                 draw_circles();
+                table.clear().rows.add(curr_data).draw();
                 }
             });
 
@@ -425,7 +414,24 @@ $(document).ready(function() {
                 d3.select('#tooltip').classed('hidden', true);
                 update_sliders_change();
                 draw_circles();
+                table.clear().rows.add(curr_data).draw();
                 }
             });
+    }
+
+    function create_table() {
+        console.log('num rows:', curr_data.length);
+        table = $('#data_table').DataTable({ data: data,
+                                   columns: [
+                                       {data: 'fpid'},
+                                       {data: 'emission_new'},
+                                       {data: 'excitation_new'},
+                                       {data: 'chromophore_class'},
+                                       {data: 'pka'},
+                                       {data: 'uniprot_id'},
+                                       {data: 'pdb_id'},
+                                       {data: 'genbank'},
+                                       {data: 'quantum_yield'}
+                                   ]});
     }
 });

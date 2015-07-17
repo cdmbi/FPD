@@ -2,18 +2,18 @@
 <html>
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta charset="utf8">
         <script src="http://code.jquery.com/jquery-2.1.4.min.js"></script>
         <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
         <script src="js/d3/d3.js"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
         <script src="js/jquery.event.drag-2.2/jquery.event.drag-2.2.js"></script>
-        <script src="js/slickgrid/slick.core.js"></script>
-        <script src="js/slickgrid/slick.grid.js"></script>
+        <script src="//cdn.datatables.net/1.10.7/js/jquery.dataTables.min.js"></script>
 
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
-        <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-        <link rel="stylesheet" href="js/slickgrid/slick.grid.css" type="text/css">
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+        <link rel="stylesheet" href="//cdn.datatables.net/1.10.7/css/jquery.dataTables.min.css">
         <link rel="stylesheet" href="main.css" type="text/css">
     </head>
     <body>
@@ -22,44 +22,90 @@
             <p><strong><span id="tooltip-xlabel"></span></strong><span id="xvalue"></span></p>
             <p><strong><span id="tooltip-ylabel"></span></strong><span id="yvalue"></span></p>
             <p><strong>Uniprot ID: </strong><a id="uniprot"><span id="uniprot_link"></span></a></p>
-            <p><strong>Genbank: </strong><a id="genbank"><span id="genbank_link"></span</a></p>
+            <p><strong>Genbank ID: </strong><a id="genbank"><span id="genbank_link"></span></a></p>
             <p><strong>Species: </strong><small><i><span id="species"></span></i></small></p>
         </div>
-        <div class="row">
-            <div class="col-md-8" id="mainplot"></div>
-            <div class="col-md-4" style="padding-right:50px;" id="input-panel">
-                <div id="selector">
-                    <label for="chromclass_sel">Chromophore Class</label>
-                    <select id="chromclass_sel">
-                            <option value="All" selected>All</option>
-                    </select>
-                </div>
-                <div id="xy_selector">
-                    <label for="x_selector">X Axis</label>
-                    <select id="x_selector">
-                            <option value="excitation_new">Excitation</option>
-                            <option value="emission_new" selected>Emission</option>
-                            <option value="pka">pKa</option>
-                            <option value="quantum_yield">Quantum Yield</option>
-                    </select>
-                    <label for="y_selector">Y Axis</label>
-                    <select id="y_selector">
-                            <option value="excitation_new" selected>Excitation</option>
-                            <option value="emission_new">Emission</option>
-                            <option value="pka">pKa</option>
-                            <option value="quantum_yield">Quantum Yield</option>
-                    </select>
-                </div>
-                <br>
-                <span id="yrange"></span>
-                <div id="yslider"></div>
-                <br>
-                <span id="xrange"></span>
-                <div id="xslider"></div>
-                <br><br>
-                <button type="button" id="reset-btn">Reset</button>
+        <div class="container">
+            <ul class="nav nav-tabs">
+                <li class="active"><a href="#">Home</a></li>
+                <li><a href="#">About</a></li>
+            </ul>
+            <div class="row">
+                <div id="title" class="col-xs-12 text-center">
+                    <div class="page-header"><h1>Fluorescent Proteins Database</h1>
+                        <p><small>Center of Data Mining and Biomedical Informatics, Faculty of Medical Technology, Mahidol University, Thailand</small></p>
+                </div></div>
             </div>
-            <div class="col-md-12" id="datagrid" style="width:800px;height:800px;"></div>
+            <div class="row">
+                <div class="col-xs-12 col-md-6 mainplot" id="mainplot"></div>
+                <div class="col-xs-12 col-md-6 input-panel" id="input-panel">
+                    <div id="selector">
+                        <label for="chromclass_sel">Chromophore Class</label>
+                        <select id="chromclass_sel">
+                                <option value="All" selected>All</option>
+                        </select>
+                    </div>
+                    <div id="xy_selector">
+                        <label for="x_selector">X Axis</label>
+                        <select id="x_selector">
+                                <option value="excitation_new">Excitation</option>
+                                <option value="emission_new" selected>Emission</option>
+                                <option value="pka">pKa</option>
+                                <option value="quantum_yield">Quantum Yield</option>
+                        </select>
+                        <label for="y_selector">Y Axis</label>
+                        <select id="y_selector">
+                                <option value="excitation_new" selected>Excitation</option>
+                                <option value="emission_new">Emission</option>
+                                <option value="pka">pKa</option>
+                                <option value="quantum_yield">Quantum Yield</option>
+                        </select>
+                    </div>
+                    <br>
+                    <span id="yrange"></span>
+                    <div id="yslider"></div>
+                    <br>
+                    <span id="xrange"></span>
+                    <div id="xslider"></div>
+                    <br><br>
+                    <button type="button" id="reset-btn" class="btn btn-primary">Reset</button>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div id="datagrid" class="col-xs-12 col-md-12">
+                    <table id="data_table" class="table table-striped cell-border display compact" cellspacing="0" width="100%">
+                        <thead>
+                            <tr>
+                                <th>FPID</th>
+                                <th>Emission</th>
+                                <th>Excitation</th>
+                                <th>Chromophore Class</th>
+                                <th>Pka</th>
+                                <th>Uniprot ID</th>
+                                <th>PDB ID</th>
+                                <th>Genbank</th>
+                                <th>Quantum yield</th>
+                            </tr>
+                        </thead>
+                        <tfoot>
+                            <tr>
+                                <th>FPID</th>
+                                <th>Emission</th>
+                                <th>Excitation</th>
+                                <th>Chromophore Class</th>
+                                <th>Pka</th>
+                                <th>Uniprot ID</th>
+                                <th>PDB ID</th>
+                                <th>Genbank</th>
+                                <th>Quantum yield</th>
+                            </tr>
+                        </tfoot>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
         <script src="js/main.js"></script>
     </body>
